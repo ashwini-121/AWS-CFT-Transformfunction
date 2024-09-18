@@ -1,0 +1,33 @@
+{
+  "EC2Instance": {
+    "Type": "AWS::EC2::Instance",
+    "Properties": {
+      "AvailabilityZone": "us-east-1a",
+      "InstanceType": "t2.micro",
+      "ImageId": "ami-0277155c3f0ab2930",
+      "KeyName": "test",
+      "Tags": [
+        {
+          "Key": "Name",
+          "Value": "EC2 cft Demo"
+        }
+      ],
+      "UserData": {
+        "Fn::Base64": "#!/bin/bash\nsudo -i\nyum update -y\nyum install httpd -y\nsystemctl start httpd\nsystemctl enable httpd\ncd /var/www/html\ntouch test.html\n"
+      },
+      "SecurityGroupIds": ["sg-05a716a1c6c111f36"]
+    }
+  },
+  "S3Bucket": {
+    "Type": "AWS::S3::Bucket",
+    "Properties": {
+      "BucketName": "testec2s3123",
+      "PublicAccessBlockConfiguration": {
+        "BlockPublicAcls": false,
+        "BlockPublicPolicy": false,
+        "IgnorePublicAcls": false,
+        "RestrictPublicBuckets": false
+      }
+    }
+  }
+}
