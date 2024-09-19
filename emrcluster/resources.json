@@ -1,0 +1,204 @@
+{
+  "MySNSTopic": {
+    "Type": "AWS::SNS::Topic",
+    "Properties": {
+      "DisplayName": "mailsns",
+      "TopicName": "mailsns",
+      "Tags": [
+        {
+          "Key": "product",
+          "Value": "Rakesh"
+        }
+      ],
+      "Subscription": [
+        {
+          "Endpoint": {"Fn::GetAtt": ["CustomEmailLambda", "Arn"] },
+          "Protocol": "lambda"
+        }
+      ]
+    }
+  },
+  "EmailSNSTopic" : {
+    "Type" : "AWS::SNS::Topic",
+    "Properties" : {
+        "DisplayName" :"EmailSNS", 
+      "Subscription" : [
+      {
+      "Endpoint" : "gamidirakhi@gmail.com",
+      "Protocol" : "email"
+      }],
+      "TopicName" :"EmailSNS"
+    }
+ },
+ "CustomEmailLambda": {
+  "Type": "AWS::Lambda::Function",
+  "Properties": {
+     "FunctionName": "custom-email-lambda",
+    "Timeout": 600,
+    "Handler": "customemail.handler",
+    "Runtime": "python3.8",
+    "Role": "arn:aws:iam::107406514706:role/iamlambda",
+      "Environment": {
+      "Variables": {
+        "ALERTACTION": { "Ref": "EmailSNSTopic" }
+      }
+  },
+    "Code": {
+              "S3Bucket" : "cf-templates-z4l0q3hmcyj4-us-east-1",
+              "S3Key" : "customemail.zip"
+    }
+  },
+  "DependsOn":"EmailSNSTopic"
+},
+"PermissionForSNSToInvokeLambda": {
+  "Type": "AWS::Lambda::Permission",
+  "Properties": {
+    "FunctionName": { "Ref": "CustomEmailLambda" },
+    "Action": "lambda:InvokeFunction",
+    "Principal": "sns.amazonaws.com",
+    "SourceArn": { "Ref": "MySNSTopic" }
+  }
+ },
+"EventRuleCustomEmail": {
+  "Type": "AWS::Events::Rule",
+  "Properties": {
+    "Description": "EventRule",
+    "Name": "custome_mailTrigger",
+    "EventPattern": {
+        "source": [ "aws.emr" ],
+        "detail-type": ["EMR Cluster State Change"],
+                    "detail": {
+                        "clusterId": [{ "Ref": "EMRCluster" }],
+                        "state": ["TERMINATED_WITH_ERRORS", "TERMINATED"]
+                    }
+      },
+      "State": "ENABLED",
+      "Targets": [{
+      "Arn": { "Ref": "MySNSTopic" },
+      "Id": "TargetFunctionV2"
+    }]
+  }
+ },
+  "SSMParameterCluterId": {
+    "Type": "AWS::SSM::Parameter",
+    "Properties": {
+        "Name": "dashboardremoval",
+        "Type": "String",
+        "Value": {
+            "Ref": "EMRCluster"
+        },
+        "Description": "SSM Parameter for event rule.",
+        "Tier": "Standard"
+    }
+   },
+  "MySNSTopicPolicy": {
+    "Type": "AWS::SNS::TopicPolicy",
+    "Properties": {
+      "PolicyDocument": {
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": [
+                "events.amazonaws.com",
+                "cloudwatch.amazonaws.com"
+              ]
+            },
+            "Action": [
+              "SNS:GetTopicAttributes",
+              "SNS:SetTopicAttributes",
+              "SNS:AddPermission",
+              "SNS:RemovePermission",
+              "SNS:DeleteTopic",
+              "SNS:Subscribe",
+              "SNS:ListSubscriptionsByTopic",
+              "SNS:Publish",
+              "SNS:Receive"
+            ],
+            "Resource": {
+              "Ref": "MySNSTopic"
+            }
+          }
+        ]
+      },
+      "Topics": [
+        {
+          "Ref": "MySNSTopic"
+        }
+      ]
+    }
+  },
+  "Dashboard": {
+    "Type": "AWS::Lambda::Function",
+    "Properties": {
+      "FunctionName": "Alarmsdashboardcreation",
+      "Timeout": 600,
+      "Handler": "Alarmss.lambda_handler",
+      "Runtime": "python3.8",
+      "Role": "arn:aws:iam::107406514706:role/iamlambda",
+      "Environment": {
+        "Variables": {
+          "BUCKET": "cf-templates-z4l0q3hmcyj4-us-east-1",
+          "ALERTACTION": {
+            "Ref": "MySNSTopic"
+          }
+        }
+      },
+      "Code": {
+        "S3Bucket": "cf-templates-z4l0q3hmcyj4-us-east-1",
+        "S3Key": "Alarmss.zip"
+      }
+    },
+    "DependsOn": "MySNSTopic"
+  },
+  "EventRule": {
+    "Type": "AWS::Events::Rule",
+    "Properties": {
+      "Description": "EventRule",
+      "Name": "Trigger",
+      "EventPattern": {
+        "source": [
+          "aws.emr"
+        ],
+        "detail-type": [
+          "EMR Cluster State Change",
+          "EMR Instance Group State Change",
+          "EMR Instance Fleet State Change"
+        ],
+        "detail": {
+          "clusterId": [
+            {
+              "Ref": "EMRCluster"
+            }
+          ]
+        }
+      },
+      "State": "ENABLED",
+      "Targets": [
+        {
+          "Arn": {
+            "Fn::GetAtt": [
+              "Dashboard",
+              "Arn"
+            ]
+          },
+          "Id": "TargetFunctionV1"
+        }
+      ]
+    }
+  },
+  "PermissionForEventsToInvokeLambda": {
+    "Type": "AWS::Lambda::Permission",
+    "Properties": {
+      "FunctionName": "Alarmsdashboardcreation",
+      "Action": "lambda:InvokeFunction",
+      "Principal": "events.amazonaws.com",
+      "SourceArn": {
+        "Fn::GetAtt": [
+          "EventRule",
+          "Arn"
+        ]
+      }
+    }
+  }
+}
