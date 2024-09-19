@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Dashboard removal stack.
+Resources:
+    LambdaFunctionForEMR:
+        Type: AWS::Lambda::Function
+        Properties:
+          FunctionName: !Join ["", [!Ref "AWS::StackName","Dashboardremoval","-lambda"]]
+          Handler: dashboard_removal.handler 
+          Role: arn:aws:iam::107406514706:role/iamlambda
+          Code:
+            S3Bucket: cf-templates-z4l0q3hmcyj4-us-east-1 #!Join [ '', [ 'med-av-daas-',!If [ProdEnvironment, prod, preprod],"-",!Ref ApplicationPrefix,"-cicd" ] ] #!Sub 'med-av-daas-preprod-${ApplicationPrefix}-cicd'
+            S3Key: dashboard_removal.zip
+          Runtime: python3.9
+          Timeout: 600                                                       
+          TracingConfig:
+            Mode: Active
+    EventBridgeRule:
+        Type: AWS::Events::Rule
+        Properties:
+          Name: !Join ["", [!Ref "AWS::StackName","Dashboardremoval","-eventrule"]] 
+          Description: "emr-state-change-EventRule for Alert CleanUp and cloudwatch dashboard removal"
+          EventPattern: 
+            source: 
+              - 'aws.emr'
+            detail-type: 
+              - 'EMR Cluster State Change'
+            detail: 
+              state:
+                - 'TERMINATED'
+              clusterId: 
+               # - !Join ["", ["{{resolve:ssm:/datasci/",!Ref "AWS::StackName","/EMR/ClusterId}}"]] 
+                - !Join ["", ["{{resolve:ssm:",dashboardremoval]]
+          State: "ENABLED"
+          Targets: 
+            - Arn: !GetAtt LambdaFunctionForEMR.Arn
+              Id: "TargetFunctionV1"
+    PermissionForEventsToInvokeLambda:
+        Type: AWS::Lambda::Permission
+        Properties: 
+          FunctionName: !GetAtt LambdaFunctionForEMR.Arn
+          Action: "lambda:InvokeFunction"
+          Principal: "events.amazonaws.com"
+          SourceArn: !GetAtt EventBridgeRule.Arn

@@ -1,0 +1,310 @@
+{
+    "widgets": [
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 0,
+            "width": 18,
+            "height": 3,
+            "properties": {
+                "metrics": [
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/mnt", "InstanceId", "i-08e2ba2201e5b3ad1", "Filesystem", "/dev/nvme1n1p2" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/mnt", "InstanceId", "i-00f858157e2843bde", "Filesystem", "/dev/nvme1n1p2" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/mnt", "InstanceId", "i-05b33bfd2331feb0e", "Filesystem", "/dev/nvme1n1p2" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/mnt", "InstanceId", "i-0efb38f881bc87ae3", "Filesystem", "/dev/nvme1n1p2" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/mnt", "InstanceId", "i-091547abd4fc5584e", "Filesystem", "/dev/nvme1n1p2" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/mnt", "InstanceId", "i-0ad22f56ab81463a0", "Filesystem", "/dev/nvme1n1p2" ]
+                ],
+                "view": "timeSeries",
+                "region": "us-east-1",
+                "stat": "Average",
+                "period": 300,
+                "title": "Disk Utilization (/mnt)",
+                "stacked": false,
+                "legend": {
+                    "position": "right"
+                }
+            }
+        },
+
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 0,
+            "width": 18,
+            "height": 3,
+            "properties": {
+                "metrics": [
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/emr", "InstanceId", "i-08e2ba2201e5b3ad1", "Filesystem", "/dev/nvme1n1p1" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/emr", "InstanceId", "i-00f858157e2843bde", "Filesystem", "/dev/nvme1n1p1" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/emr", "InstanceId", "i-05b33bfd2331feb0e", "Filesystem", "/dev/nvme1n1p1" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/emr", "InstanceId", "i-0efb38f881bc87ae3", "Filesystem", "/dev/nvme1n1p1" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/emr", "InstanceId", "i-091547abd4fc5584e", "Filesystem", "/dev/nvme1n1p1" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/emr", "InstanceId", "i-0ad22f56ab81463a0", "Filesystem", "/dev/nvme1n1p1" ]
+                ],
+                "view": "timeSeries",
+                "region": "us-east-1",
+                "stat": "Average",
+                "period": 300,
+                "title": "Disk Utilization (/emr)",
+                "stacked": false,
+                "legend": {
+                    "position": "right"
+                }
+            }
+        },
+
+
+
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 9,
+            "width": 18,
+            "height": 3,
+            "properties": {
+                "metrics": [
+                    [ "System/Linux", "MemoryUtilization", "InstanceId", "i-08e2ba2201e5b3ad1" ],
+                    [ "System/Linux", "MemoryUtilization", "InstanceId", "i-00f858157e2843bde" ],
+                    [ "System/Linux", "MemoryUtilization", "InstanceId", "i-05b33bfd2331feb0e" ],
+                    [ "System/Linux", "MemoryUtilization", "InstanceId", "i-0efb38f881bc87ae3" ],
+                    [ "System/Linux", "MemoryUtilization", "InstanceId", "i-091547abd4fc5584e" ],
+                    [ "System/Linux", "MemoryUtilization", "InstanceId", "i-0ad22f56ab81463a0" ]
+                ],
+                "view": "timeSeries",
+                "region": "us-east-1",
+                "title": "Memory Utilization",
+                "period": 300,
+                "stat": "Average",
+                "stacked": false,
+                "legend": {
+                    "position": "right"
+                }
+            }
+        },
+        {
+            "type": "metric",
+            "x": 18,
+            "y": 0,
+            "width": 6,
+            "height": 6,
+            "properties": {
+                "metrics": [
+                    [ "AWS/ElasticMapReduce", "MemoryAllocatedMB", "JobFlowId", "j-3LE2R51UUZPYP" ],
+                    [ ".", "MemoryAvailableMB", ".", "." ],
+                    [ ".", "MemoryReservedMB", ".", "." ]
+                ],
+                "view": "pie",
+                "stacked": false,
+                "region": "us-east-1",
+                "liveData": true,
+                "title": "Memory",
+                "period": 300,
+                "stat": "Average",
+                "setPeriodToTimeRange": true
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 15,
+            "width": 18,
+            "height": 3,
+            "properties": {
+                "metrics": [
+                    [ "AWS/ElasticMapReduce", "MRActiveNodes", "JobFlowId", "j-3LE2R51UUZPYP" ],
+                    [ ".", "MRDecommissionedNodes", ".", "." ],
+                    [ ".", "MRLostNodes", ".", "." ],
+                    [ ".", "MRRebootedNodes", ".", "." ],
+                    [ ".", "MRTotalNodes", ".", "." ],
+                    [ ".", "MRUnhealthyNodes", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-east-1",
+                "title": "Map Reduce Nodes",
+                "legend": {
+                    "position": "right"
+                },
+                "period": 300,
+                "stat": "Average"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 18,
+            "y": 6,
+            "width": 6,
+            "height": 6,
+            "properties": {
+                "metrics": [
+                    [ "AWS/ElasticMapReduce", "CoreNodesPending", "JobFlowId", "j-3LE2R51UUZPYP" ],
+                    [ ".", "CoreNodesRunning", ".", "." ]
+                ],
+                "view": "pie",
+                "region": "us-east-1",
+                "legend": {
+                    "position": "bottom"
+                },
+                "labels": {
+                    "visible": false
+                },
+                "period": 300,
+                "title": "Core Nodes",
+                "stat": "Average"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 18,
+            "y": 12,
+            "width": 3,
+            "height": 3,
+            "properties": {
+                "metrics": [
+                    [ "AWS/ElasticMapReduce", "HDFSUtilization", "JobFlowId", "j-3LE2R51UUZPYP" ]
+                ],
+                "view": "singleValue",
+                "region": "us-east-1",
+                "title": "HDFS Utilization",
+                "period": 300,
+                "stat": "Average"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 21,
+            "y": 12,
+            "width": 3,
+            "height": 3,
+            "properties": {
+                "metrics": [
+                    [ "AWS/ElasticMapReduce", "YARNMemoryAvailablePercentage", "JobFlowId", "j-3LE2R51UUZPYP" ]
+                ],
+                "view": "singleValue",
+                "region": "us-east-1",
+                "stacked": false,
+                "title": "Yarn Memory Available",
+                "period": 300
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 12,
+            "width": 18,
+            "height": 3,
+            "properties": {
+                "view": "timeSeries",
+                "metrics": [
+                    [ "AWS/EC2", "CPUUtilization", "InstanceId", "i-08e2ba2201e5b3ad1" ],
+                    [ "AWS/EC2", "CPUUtilization", "InstanceId", "i-00f858157e2843bde" ],
+                    [ "AWS/EC2", "CPUUtilization", "InstanceId", "i-05b33bfd2331feb0e" ],
+                    [ "AWS/EC2", "CPUUtilization", "InstanceId", "i-0efb38f881bc87ae3" ],
+                    [ "AWS/EC2", "CPUUtilization", "InstanceId", "i-091547abd4fc5584e" ],
+                    [ "AWS/EC2", "CPUUtilization", "InstanceId", "i-0ad22f56ab81463a0" ]
+                ],
+                "region": "us-east-1",
+                "title": "CPU Utilization",
+                "period": 300,
+                "stacked": true,
+                "legend": {
+                    "position": "right"
+                }
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 3,
+            "width": 18,
+            "height": 3,
+            "properties": {
+                "view": "timeSeries",
+                "stacked": false,
+                "metrics": [
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/mnt1", "InstanceId", "i-08e2ba2201e5b3ad1", "Filesystem", "/dev/nvme2n1" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/mnt1", "InstanceId", "i-00f858157e2843bde", "Filesystem", "/dev/nvme2n1" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/mnt1", "InstanceId", "i-05b33bfd2331feb0e", "Filesystem", "/dev/nvme2n1" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/mnt1", "InstanceId", "i-0efb38f881bc87ae3", "Filesystem", "/dev/nvme2n1" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/mnt1", "InstanceId", "i-091547abd4fc5584e", "Filesystem", "/dev/nvme2n1" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/mnt1", "InstanceId", "i-0ad22f56ab81463a0", "Filesystem", "/dev/nvme2n1" ]
+                ],
+                "region": "us-east-1",
+                "title": "Disk Utilization (/mnt1)"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 6,
+            "width": 18,
+            "height": 3,
+            "properties": {
+                "view": "timeSeries",
+                "stacked": false,
+                "metrics": [
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/", "InstanceId", "i-08e2ba2201e5b3ad1", "Filesystem", "/dev/nvme0n1p1" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/", "InstanceId", "i-00f858157e2843bde", "Filesystem", "/dev/nvme0n1p1" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/", "InstanceId", "i-05b33bfd2331feb0e", "Filesystem", "/dev/nvme0n1p1" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/", "InstanceId", "i-0efb38f881bc87ae3", "Filesystem", "/dev/nvme0n1p1" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/", "InstanceId", "i-091547abd4fc5584e", "Filesystem", "/dev/nvme0n1p1" ],
+                    [ "System/Linux", "DiskSpaceUtilization", "MountPath", "/", "InstanceId", "i-0ad22f56ab81463a0", "Filesystem", "/dev/nvme0n1p1" ]
+                ],
+                "region": "us-east-1",
+                "title": "Disk Utilization (/)"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 18,
+            "width": 19,
+            "height": 3,
+            "properties": {
+                "metrics": [
+                    [ "AWS/ElasticMapReduce", "AppsCompleted", "JobFlowId", "j-3LE2R51UUZPYP", { "yAxis": "left", "id": "m1" } ],
+                    [ ".", "AppsFailed", ".", ".", { "id": "m2" } ],
+                    [ ".", "AppsKilled", ".", ".", { "id": "m3" } ],
+                    [ ".", "AppsPending", ".", ".", { "id": "m4" } ],
+                    [ ".", "AppsRunning", ".", ".", { "id": "m5" } ],
+                    [ ".", "AppsSubmitted", ".", ".", { "id": "m6" } ]
+                ],
+                "view": "singleValue",
+                "region": "us-east-1",
+                "liveData": true,
+                "setPeriodToTimeRange": true,
+                "stacked": false,
+                "title": "Apps Info",
+                "period": 1,
+                "stat": "Maximum",
+                "legend": {
+                    "position": "right"
+                },
+                "yAxis": {
+                    "right": {
+                        "showUnits": true
+                    },
+                    "left": {
+                        "showUnits": true
+                    }
+                }
+            }
+        },
+        {
+            "type": "metric",
+            "x": 18,
+            "y": 15,
+            "width": 3,
+            "height": 3,
+            "properties": {
+                "view": "singleValue",
+                "metrics": [
+                    [ "AWS/ElasticMapReduce", "ContainerPendingRatio", "JobFlowId", "j-3LE2R51UUZPYP" ]
+                ],
+                "region": "us-east-1",
+                "title": "Container Pending Ratio"
+            }
+        }
+    ]
+}
