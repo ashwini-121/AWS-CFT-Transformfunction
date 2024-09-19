@@ -1,0 +1,17 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: creating EMR cluster Instance 
+
+Resources:
+ EMRCluster:
+    Type: AWS::EMR::Cluster
+    Properties:
+
+     'Fn::Transform':
+        Name: 'AWS::Include'
+        Parameters:
+           Location: 's3://cf-templates-z4l0q3hmcyj4-us-east-1/emrclusters/properties.json'
+ 'Fn::Transform':
+        Name: 'AWS::Include'
+        Parameters:
+           Location: 's3://cf-templates-z4l0q3hmcyj4-us-east-1/emrclusters/resources.json'
+
