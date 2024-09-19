@@ -1,0 +1,39 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Nothing to do in the pre_build phase...
+  build:
+    commands:
+      - echo Build started on `date`
+      - pwd
+      - ls -ltrh
+      - aws cloudformation validate-template --template-body file://ec2cft.yml
+      #- aws cloudformation create-stack --stack-name codebuildstack --template-body file://ec2cft.yml
+      #- aws cloudformation create-change-set --stack-name codebuildstackchangeset --change-set-name ec2changeset --template-body file://ec2cft.yml --ParameterKey=InstanceType,ParameterValue=t2.micro
+      # aws cloudformation deploy --stack-name codebuildstack --template-file ec2cft.yml  --parameter-overrides InstanceType=t2.micro
+      #- aws codepipeline start-pipeline-execution --name codepipelinecft
+      # - aws cloudformation create-stack --stack-name codebuildemrstack --template-body file://EMR.yml --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND
+      # - aws codebuild start-build --project-name cftcodebuild
+      - aws s3 ls
+      #- aws s3api put-object --bucket codebuildpipeline-cftbucket --key gitfiles/dummy-file.txt
+      #- aws s3 sync . s3://codebuildpipeline-cftbucket/gitfiles
+      - aws s3 sync . s3://cf-templates-z4l0q3hmcyj4-us-east-1
+      #- zip -r ec2cft.yml.zip ec2cft.yml && zip -r Transform_function.yml.zip Transform_function.yml && zip -r statemachinecft.yml.zip statemachinecft.yml
+      - zip -r internal.zip statemachinecft1.yml Transform_function.yml ec2cft.yml *.json
+      - zip -r SNS.zip SNS.py
+      #- aws s3 cp ec2cft.yml.zip s3://"codebuildpipelinecftbucket"
+      #- aws s3 cp Transform_function.yml.zip s3://"codebuildpipelinecftbucket"
+      - aws s3 cp internal.zip s3://"cf-templates-z4l0q3hmcyj4-us-east-1"
+      - aws s3 cp SNS.zip s3://"cf-templates-z4l0q3hmcyj4-us-east-1"
+      
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      #- aws cloudformation execute-change-set --change-set-name ec2changeset --stack-name codebuildstackchangeset
+      # - aws cloudformation delete-stack --stack-name codebuildec2stack
+
+artifacts:
+  files:
+    - '**/*'

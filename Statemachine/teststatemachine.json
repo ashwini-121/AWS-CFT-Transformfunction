@@ -1,0 +1,130 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "Lambda Invoke",
+  "States": {
+    "Lambda Invoke": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-1:107406514706:function:updatedtest:$LATEST"
+      },
+      "ResultSelector": {
+        "ClusterId.$": "$.Payload.ClusterId",
+        "MyStepName.$": "$.Payload.MyStepName",
+        "result": "found"
+      },
+      "Next": "Choice",
+      "ResultPath": "$.states_output"
+    },
+    "Choice": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.states_output.ClusterId",
+          "StringEquals": "",
+          "Next": "CreateCluster"
+        },
+        {
+          "And": [
+            {
+              "Not": {
+                "Variable": "$.states_output.MyStepName",
+                "StringEquals": ""
+              }
+            }
+          ],
+          "Next": "SNS Publish"
+        }
+      ],
+      "Default": "Workflow"
+    },
+    "SNS Publish": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "Message": "[my tesing on state machine, and sending mail]",
+        "Subject": "Empty",
+        "TopicArn": "arn:aws:sns:us-east-1:107406514706:Tesing"
+      },
+      "Next": "DescribeRule"
+    },
+    "DescribeRule": {
+      "Type": "Task",
+      "Parameters": {
+        "Name": "Transient1"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:eventbridge:describeRule",
+      "Next": "DisableRule",
+      "ResultPath": "$.Name"
+    },
+    "DisableRule": {
+      "Type": "Task",
+      "End": true,
+      "Parameters": {
+        "Name.$": "$.Name.Name"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:eventbridge:disableRule"
+    },
+    "CreateCluster": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::elasticmapreduce:createCluster",
+      "Parameters": {
+        "Name": "Transient",
+        "ServiceRole": "EMRserivcerole",
+        "JobFlowRole": "AmazonEMR-InstanceProfile-20230828T132849",
+        "ReleaseLabel": "emr-6.6.0",
+        "AutoTerminationPolicy": {
+          "IdleTimeout": 60
+        },
+        "Applications": [
+          {
+            "Name": "Spark"
+          }
+        ],
+        "VisibleToAllUsers": true,
+        "Instances": {
+          "KeepJobFlowAliveWhenNoSteps": true,
+          "InstanceFleets": [
+            {
+              "InstanceFleetType": "MASTER",
+              "Name": "Master",
+              "TargetOnDemandCapacity": 1,
+              "InstanceTypeConfigs": [
+                {
+                  "InstanceType": "m1.medium"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "ResultSelector": {
+        "result": "found",
+        "ClusterId.$": "$.ClusterId"
+      },
+      "Next": "Wait",
+      "ResultPath": "$.states_output"
+    },
+    "Wait": {
+      "Type": "Wait",
+      "Seconds": 10,
+      "Next": "Workflow"
+    },
+    "Workflow": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::elasticmapreduce:addStep",
+      "Parameters": {
+        "ClusterId.$": "$.states_output.ClusterId",
+        "Step": {
+          "Name": "MyStepName",
+          "ActionOnFailure": "CONTINUE",
+          "HadoopJarStep": {
+            "Jar": "s3://cf-templates-z4l0q3hmcyj4-us-east-1/HelloWorld-0.7.0.jar",
+            "Args": []
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

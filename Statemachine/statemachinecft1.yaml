@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: creating codebuild and code pipeline service
+
+Resources:
+ MyStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: Test-StateMachine
+      DefinitionS3Location:
+        Bucket: cf-templates-z4l0q3hmcyj4-us-east-1
+        Key: teststatemachine.json
+      RoleArn: arn:aws:iam::107406514706:role/service-role/StepFunctions-MyStateMachine-r59wnjd9x-role-faw2fu1ks
+      StateMachineType: STANDARD
+ filestransferlambda:
+   Type: AWS::Lambda::Function
+   Properties:
+     FunctionName: SNSlambda #!Join ["", [!Ref "AWS::StackName","-lambda"]]
+     Handler: SNSlambda.lambda_handler
+     Role: arn:aws:iam::107406514706:role/iamlambda
+     Code:
+       S3Bucket: cf-templates-z4l0q3hmcyj4-us-east-1
+       #  S3Bucket: !Join [ '', [ 'med-av-daas-',!If [ProdEnvironment, prod, preprod],"-",!Ref ApplicationPrefix,"-cicd" ] ] #!Sub 'med-av-daas-preprod-${ApplicationPrefix}-cicd'
+       S3Key: SNS.zip
+     Runtime: python3.9
+     Timeout: 20
+    #  Environment:
+    #     Variables: 
+    #       UAI: test
+ SNScft:
+  Type: AWS::SNS::Topic
+  Properties:
+    DisplayName: Creating test topic
+    Tags: 
+     - Key: name
+       Value: SNS
+    Subscription:
+        - Endpoint: gamidirakhi@gmail.com
+          Protocol: email
+    TopicName: SNScfttest
+ PipelineTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Id: CloudWatchEvent
+        Version: 2012-10-17
+        Statement:
+          - Sid: Allows CloudWatch Events to interact with SNS topic
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: "sns:Publish"
+            Resource: !Ref SNScft
+      Topics:
+        - !Ref SNScft
