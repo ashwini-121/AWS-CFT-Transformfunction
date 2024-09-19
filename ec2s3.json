@@ -1,0 +1,94 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Creating EC2 Instance with security group by enabling port 80 and 22(SSH) and S3 Bucket",
+  "Parameters": {
+    "AvailabilityZone": {
+      "Type": "String",
+      "Default": "us-east-1a",
+      "AllowedValues": [
+        "us-west-1",
+        "us-east-1a",
+        "ap-southeast-1a"
+      ],
+      "Description": "Enter availabilityzone"
+    },
+    "InstanceType": {
+      "Type": "String",
+      "Default": "t2.micro"
+    },
+    "ImageId": {
+      "Type": "String",
+      "Default": "ami-0277155c3f0ab2930",
+      "AllowedValues": [
+        "ami-0277155c3f0ab2930",
+        "ami-06e46074ae430fba6"
+      ]
+    }
+  },
+  "Resources": {
+    "cftKeypair": {
+      "Type": "AWS::EC2::KeyPair",
+      "Properties": {
+        "KeyFormat": "pem",
+        "KeyName": "cfttest",
+        "KeyType": "rsa"
+      }
+    },
+    "WebServerSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Enable HTTP access via port 80 + SSH access",
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "FromPort": 80,
+            "IpProtocol": "tcp",
+            "ToPort": 80
+          },
+          {
+            "CidrIp": "0.0.0.0/0",
+            "FromPort": 22,
+            "IpProtocol": "tcp",
+            "ToPort": 22
+          },
+          {
+            "CidrIp": "0.0.0.0/0",
+            "FromPort": 8080,
+            "IpProtocol": "tcp",
+            "ToPort": 8080
+          }
+        ]
+      }
+    },
+    "EC2Instance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "AvailabilityZone": "us-east-1a",
+        "InstanceType": "t2.micro",
+        "ImageId": "ami-0277155c3f0ab2930",
+        "KeyName": "cfttest",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "EC2 cft Demo"
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": "#!/bin/bash\nsudo -i\nyum update -y\nyum install httpd -y\nsystemctl start httpd\nsystemctl enable httpd\ncd /var/www/html\ntouch test.html\n"
+        }
+      }
+    },
+    "S3Bucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "testec2s3123",
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": false,
+          "BlockPublicPolicy": false,
+          "IgnorePublicAcls": false,
+          "RestrictPublicBuckets": false
+        }
+      }
+    }
+  }
+}

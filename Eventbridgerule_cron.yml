@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for EventBridge rule 'Transient'
+Resources:
+  EventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName: default
+      Name: Test
+      ScheduleExpression: cron(20 7 * * ? *)
+      State: ENABLED
+      Targets:
+        - Id: Id089477a4-19b4-40f1-baae-2328f47443ee
+          Arn: arn:aws:states:us-east-1:107406514706:stateMachine:SNS
+          RoleArn: >-
+            arn:aws:iam::107406514706:role/service-role/Amazon_EventBridge_Scheduler_SFN_92b0fd6533

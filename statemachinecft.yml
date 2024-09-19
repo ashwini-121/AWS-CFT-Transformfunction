@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: An example template for a Step Functions state machine.
+Resources:
+  MyStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: Test-StateMachine
+      DefinitionS3Location:
+        Bucket: cf-templates-z4l0q3hmcyj4-us-east-1
+        Key: stepfunctionsns.json
+      RoleArn: arn:aws:iam::107406514706:role/stepfunctioniam
+      StateMachineType: STANDARD
+  EventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName: default
+      Name: Test
+      ScheduleExpression: cron(57 21 * * ? *)
+      State: ENABLED
+      Targets:
+        - Id: Id089477a4-19b4-40f1-baae-2328f47443ee
+          Arn: !GetAtt MyStateMachine.Arn
+          RoleArn: arn:aws:iam::107406514706:role/service-role/Amazon_EventBridge_Invoke_Step_Functions_114513857
+  SNScft:
+   Type: AWS::SNS::Topic
+   Properties:
+    DisplayName: Statemachine
+    Tags: 
+     - Key: name
+       Value: SNS
+    Subscription:
+        - Endpoint: gamidirakhi@gmail.com
+          Protocol: email
+    TopicName: SNScfttest
+  SNScftTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Id: CloudWatchEvent
+        Version: 2012-10-17
+        Statement:
+          - Sid: Allows CloudWatch Events to interact with SNS topic
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: "sns:Publish"
+            Resource: !Ref SNScft
+      Topics:
+        - !Ref SNScft
+         

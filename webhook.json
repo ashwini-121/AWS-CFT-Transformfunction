@@ -1,0 +1,12 @@
+[
+  [
+    {
+      "type": "EVENT",
+      "pattern":"PUSH"
+    },
+    {
+      "type": "BASE_REF",
+      "pattern": "^refs/heads/cloudformationcft$"
+    }
+  ]
+]

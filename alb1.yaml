@@ -1,0 +1,111 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: This template creates an Application Load Balancer with EC2 instances
+
+Parameters:
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t1.micro
+      - t2.nano
+      - t2.micro
+  ImageId:
+    Type: String
+    Default: ami-0e731c8a588258d0d
+    AllowedValues:
+      - ami-0889a44b331db0194
+      - ami-0e731c8a588258d0d
+
+Resources:
+#Create an Application Load Balancer
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: MyApplicationLoadBalancer
+      SecurityGroups:
+        - sg-05a716a1c6c111f36
+      Subnets: 
+        - subnet-01e9f8544556bbc6c
+        - subnet-0c3f6946acfc9c0b8
+
+#Create a Listener on Port 80
+  Listener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+      - Type: forward
+        ForwardConfig:
+          TargetGroups:
+            - TargetGroupArn: !Ref ALBTargetGroup
+              Weight: 1
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+# Create a Target Group
+  ALBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      Name: MyWebServers
+      Port: 80
+      Protocol: HTTP
+      Targets:
+        - Id: !Ref EC2Instance1
+          Port: 80
+        - Id: !Ref EC2Instance2
+          Port: 80
+      TargetType: instance
+      UnhealthyThresholdCount: 5
+      VpcId: vpc-068c55fac37bc9bda
+
+  EC2Instance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: subnet-0c3f6946acfc9c0b8
+      SecurityGroupIds:
+        - sg-05a716a1c6c111f36
+      KeyName: test
+      ImageId: !Ref ImageId 
+      Tags:
+        - Key: Name
+          Value: EC2-1
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash -xe
+            sudo -i
+            yum update -y
+            yum install -y httpd
+            echo "Healthy" > /var/www/html/index.html
+            systemctl start httpd
+            systemctl enable httpd
+
+  EC2Instance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: subnet-01e9f8544556bbc6c
+      SecurityGroupIds:
+        - sg-05a716a1c6c111f36
+      KeyName: test
+      ImageId: !Ref ImageId 
+      Tags:
+        - Key: Name
+          Value: EC2-2
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash -xe
+            sudo -i
+            yum update -y
+            yum install -y httpd
+            echo "UnHealthy" > /var/www/html/index.html
+            systemctl start httpd
+            systemctl enable httpd

@@ -1,0 +1,41 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating EC2 Instance
+Parameters:
+  AvailabilityZone:
+    Type: String
+    Default: us-east-1a
+    AllowedValues:
+      - us-south-1
+      - us-west-1
+      - us-east-1a
+      - ap-southeast-1a
+    Description: Enter availabilityzone
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - a1.2xlarge   
+      - a1.metal  
+      - a1.medium 
+      - a1.large 
+      - a1.4xlarge
+      - t2.micro 
+  ImageId:
+    Type: String
+    Default: ami-06e46074ae430fba6   
+Resources: 
+  EC2Insatnce: 
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref ImageId
+      Tags:
+        - Key: Name
+          Value: EC2
+      SubnetId: subnet-0b1adb52bce824af3 
+  
+    
+       
+

@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: creating codebuild and code pipeline service
+
+Resources:
+ ArtifactBucket:
+   Type: AWS::S3::Bucket
+   Properties:
+    BucketName: codebuildpipelinecftbucket
+    VersioningConfiguration:
+     Status: Enabled
+
+
+ Codebuild:
+  Type: AWS::CodeBuild::Project
+  Properties:
+    Name: codebuildcft1
+    Description: Creating ec2 instance using code build
+    ServiceRole: arn:aws:iam::107406514706:role/service-role/cftcodebuild-test-service-role
+    LogsConfig:
+      CloudWatchLogs:
+        Status: ENABLED
+    Artifacts:
+      Type: no_artifacts
+    Environment:
+      Type: LINUX_CONTAINER
+      ComputeType: BUILD_GENERAL1_SMALL
+      Image: aws/codebuild/java:openjdk-8
+    Source:
+      Type: GITHUB     
+      Location: https://github.com/gamidirakesh/AWS-CFT.git
+      BuildSpec: buildspec.yaml
+      Auth:
+        Type: OAUTH
+
+
+ codePipeline: 
+  Type: AWS::CodePipeline::Pipeline 
+  Properties: 
+    Name : codepipelinecft1
+    RoleArn: arn:aws:iam::107406514706:role/service-role/AWSCodePipelineServiceRole-us-east-1-cftcodepipelinetest
+    ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+    Stages: 
+      - Name: Source_stage
+        Actions: 
+          - Name: SourceAction
+            ActionTypeId: 
+              Category: Source 
+              Owner: ThirdParty 
+              Version: '1' 
+              Provider: GitHub
+            OutputArtifacts: 
+              - Name: AppArtifact 
+            Configuration: 
+                Owner: gamidirakesh
+                OAuthToken: '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'           
+                Repo: AWS-CFT
+                Branch: main
+            RunOrder: 1
+
+      - Name: Build_stage
+        Actions: 
+          - Name: codebuild 
+            InputArtifacts: 
+              - Name: AppArtifact 
+            ActionTypeId: 
+              Category: Build 
+              Owner: AWS 
+              Version: 1 
+              Provider: CodeBuild
+            Configuration: 
+              ProjectName: !Ref Codebuild
+            RunOrder: 1
+            OutputArtifacts:
+              - Name: BuildOutput  
+ 
+            
+      - Name: Deploy_stage
+        Actions:
+          - Name: Create-Changeset
+            ActionTypeId:
+             Category: Deploy
+             Owner: AWS
+             Provider: CloudFormation
+             Version: "1"
+            Configuration:
+             ActionMode: CHANGE_SET_REPLACE
+             StackName: codebuildcft
+             TemplatePath: 'BuildOutput::ec2cft.yml'
+             ChangeSetName: ec2creation
+             RoleArn: arn:aws:iam::107406514706:role/cftcloudformation
+            RunOrder: 1
+            InputArtifacts: 
+              - Name: BuildOutput
+          - Name: Review-Changeset
+            ActionTypeId:
+             Category: Approval
+             Owner: AWS
+             Provider: Manual
+             Version: "1"
+            RunOrder: 2 
+          - Name: ExecuteChangeset
+            ActionTypeId:
+             Category: Deploy
+             Owner: AWS
+             Version: "1"
+             Provider: CloudFormation
+            Configuration:
+             ActionMode: CHANGE_SET_EXECUTE
+             ChangeSetName: codebuildcft
+             StackName: codebuildcft 
+             RoleArn: arn:aws:iam::107406514706:role/cftcloudformation 
+            RunOrder: 3
+
+      # - Name: Deploy
+      #   InputArtifacts: 
+      #    - Name: BuildOutput
+      #   ActionTypeId: 
+      #    Category: Deploy 
+      #    Owner: AWS 
+      #    Version: 1
+      #    Provider: CloudFormation
+      #   Configuration: 
+      #    ActionMode: 'CREATE_UPDATE'
+      #    Capabilities: 'CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND'
+      #    RoleArn: arn:aws:iam::107406514706:role/cftcloudformation
+      #    StackName: codebuildcft
+      #    TemplatePath: 'BuildOutput::ec2cft.yml'
+      #   RunOrder: 1
+      #   OutputArtifacts: []

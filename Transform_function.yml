@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: creating EC2 Instance 
+
+Resources:
+ EC2Creation:
+   Type: AWS::EC2::Instance
+   Properties:
+
+     'Fn::Transform':
+        Name: 'AWS::Include'
+        Parameters:
+           Location: 's3://cf-templates-z4l0q3hmcyj4-us-east-1/ec2creation.json'
+ 'Fn::Transform':
+        Name: 'AWS::Include'
+        Parameters:
+           Location: 's3://cf-templates-z4l0q3hmcyj4-us-east-1/ec2cft_json.json'
+
+
+
+
+# Resources:
+#   EMRCluster:
+#     Type: AWS::EMR::Cluster
+#     Properties:
+
+#       #This includes all the EMR properties.
+#       'Fn::Transform':
+#         Name: 'AWS::Include'
+#         Parameters:
+#           Location: !Sub 's3://med-av-daas-preprod-${ApplicationPrefix}-cicd/emr/config/${AWS::StackName}/${AdditionalEMRPropertiesPath}'
+
+#   #This includes any additional EMR-related resources you may need.
+#   'Fn::Transform':
+#     Name: 'AWS::Include'
+#     Parameters:
+#       Location: !Sub 's3://med-av-daas-preprod-${ApplicationPrefix}-cicd/emr/config/${AWS::StackName}/${AdditionalEMRResourcesPath}'
+
+
+  
+         

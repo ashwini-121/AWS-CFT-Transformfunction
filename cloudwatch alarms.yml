@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: creating codebuild and code pipeline service
+
+Resources:
+ alarms:
+   Type: AWS::CloudWatch::Alarm
+   Properties:
+    AlarmName: test
+    ComparisonOperator: GreaterThanThreshold
+    EvaluationPeriods: 2
+    MetricName : HDFSUtilization
+    Namespace : AWS/ElasticMapReduce
+    Period: 300
+    Statistic: Average
+    Threshold : 80

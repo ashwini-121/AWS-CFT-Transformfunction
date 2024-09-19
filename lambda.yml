@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: creating codebuild and code pipeline service
+
+Resources:
+ filestransferlambda:
+   Type: AWS::Lambda::Function
+   Properties:
+     FunctionName: Alarmstesting #!Join ["", [!Ref "AWS::StackName","-lambda"]]
+     Handler: Alarmstesting.lambda_handler
+     Role: arn:aws:iam::107406514706:role/iamlambda
+     Code:
+       S3Bucket: cf-templates-z4l0q3hmcyj4-us-east-1
+       #  S3Bucket: !Join [ '', [ 'med-av-daas-',!If [ProdEnvironment, prod, preprod],"-",!Ref ApplicationPrefix,"-cicd" ] ] #!Sub 'med-av-daas-preprod-${ApplicationPrefix}-cicd'
+       S3Key: alarms.zip
+     Runtime: python3.9
+     Timeout: 20
+     Environment:
+        Variables: 
+          UAI: test
+
+ EventBridgeRule:
+   Type: AWS::Events::Rule
+   Properties:
+     Name: Test 
+     Description: "emr-state-change-EventRule"
+     EventPattern: 
+      source: 
+         - 'aws.emr'
+      detail-type: 
+          - 'EMR Cluster State Change'
+      detail: 
+         state:
+           - 'STARTING'
+     State: "ENABLED"
+     Targets: 
+       - Arn: !GetAtt filestransferlambda.Arn
+         Id: "filestransfers3"
+
+ PermissionForEventsToInvokeLambda: 
+   Type: AWS::Lambda::Permission
+   Properties: 
+     FunctionName: !GetAtt filestransferlambda.Arn
+     Action: "lambda:InvokeFunction"
+     Principal: "events.amazonaws.com"
+     SourceArn: !GetAtt EventBridgeRule.Arn
+ 
+#  EventBridgeRule:
+#    Type: AWS::Events::Rule
+#    Properties:
+#      Name: !Join ["", [!Ref "AWS::StackName","-eventrule"]] 
+#      Description: "emr-state-change-EventRule for Alert CleanUp and cloudwatch dashboard removal"
+#      EventPattern: 
+#        source: 
+#         - 'aws.emr'
+#        detail-type: 
+#               - 'EMR Cluster State Change'
+#        detail: 
+#          state:
+#            - 'TERMINATED'
+#               # clusterId: 
+#               #  # - !Join ["", ["{{resolve:ssm:/datasci/",!Ref "AWS::StackName","/EMR/ClusterId}}"]] 
+#               #   - !Join ["", ["{{resolve:ssm:/",!Select [0, !Split ["-", !Ref "AWS::StackName"]],"/",!Ref "AWS::StackName","/EMR/ClusterId}}"]]
+#           State: "ENABLED"
+#           Targets: 
+#             - Arn: !GetAtt LambdaFunctionForEMR.Arn
+#               Id: "TargetFunctionV1"

@@ -1,0 +1,12 @@
+{
+    "AvailabilityZone": "us-east-1a",
+    "InstanceType": "t2.micro",
+    "ImageId": "ami-06e46074ae430fba6",
+    "Tags": [
+      {
+        "Key": "Name",
+        "Value": "EC2"
+      }
+    ],
+    "SubnetId": "subnet-0c3f6946acfc9c0b8"
+  }

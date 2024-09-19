@@ -1,0 +1,137 @@
+# AWS CodePipeline is a fully managed continuous delivery service that helps you automate your release pipelines for 
+# fast and reliable application and infrastructure updates.
+
+# You can use CodePipeline to help you automatically build, test, and deploy your applications in the cloud. 
+# Specifically, you can Automate your release processes
+# CodePipeline fully automates your release process from end to end, starting from your source repository through build, test, and deployment.
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: creating codebuild and code pipeline service
+
+Parameters:
+#  ApplicationPrefix:
+#     Description: Prefix to identify the team.  (i.e. platform, ca, etc.)
+#     Type: String
+#     Default: cfttest
+ GitBranch:
+   Description: Prefix to identify the team.  (i.e. platform, ca, etc.)
+   Type: String
+   Default: main
+   AllowedValues:
+     - main
+     - cloudformation-script
+
+Resources:
+ ArtifactBucket:
+   Type: AWS::S3::Bucket
+   Properties:
+    BucketName: !Join ["-", [!Sub "codebuildpipeline", "cftbucket"] ]
+    VersioningConfiguration:
+     Status: Enabled
+
+ Codebuild:
+  Type: AWS::CodeBuild::Project
+  Properties:
+    Name: codebuildcft #!Join ["-", [!Sub "${AWS::StackName}", "code"]]
+    Description: Creating ec2 instance using code build
+    ServiceRole: arn:aws:iam::107406514706:role/service-role/cftcodebuild-test-service-role
+    SourceVersion: !Ref GitBranch
+    Tags: 
+       - Key: name
+         Value: codebuild
+    LogsConfig:
+      CloudWatchLogs:
+        Status: ENABLED
+    Artifacts:
+      Type: no_artifacts
+    Environment:
+      Type: LINUX_CONTAINER
+      ComputeType: BUILD_GENERAL1_SMALL
+      Image: aws/codebuild/java:openjdk-8
+    Source:
+      Type: GITHUB     
+      Location: https://github.com/gamidirakesh/AWS-CFT.git
+      BuildSpec: buildspec.yaml
+      Auth:
+        Type: OAUTH
+
+ codePipeline: 
+  Type: AWS::CodePipeline::Pipeline 
+  Properties: 
+    Name : codepipelinecft #!Join ["-", [!Sub "${ApplicationPrefix}", "code", "pipeline"]]
+    RoleArn: arn:aws:iam::107406514706:role/service-role/AWSCodePipelineServiceRole-us-east-1-cftcodepipelinetest
+    Tags: 
+       - Key: name
+         Value: codepipeline
+    ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+    Stages: 
+      - Name: Source_stage
+        Actions: 
+          - Name: SourceAction
+            ActionTypeId: 
+              Category: Source 
+              Owner: ThirdParty 
+              Version: '1' 
+              Provider: GitHub
+            OutputArtifacts: 
+              - Name: AppArtifact 
+            Configuration: 
+                Owner: gamidirakesh
+                OAuthToken: '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'           
+                Repo: AWS-CFT
+                Branch: !Ref GitBranch
+            RunOrder: 1
+
+      # - Name: Build_stage
+      #   Actions: 
+      #     - Name: codebuild 
+      #       InputArtifacts: 
+      #         - Name: AppArtifact 
+      #       ActionTypeId: 
+      #         Category: Build 
+      #         Owner: AWS 
+      #         Version: 1 
+      #         Provider: CodeBuild
+      #       Configuration: 
+      #         ProjectName: !Ref Codebuild
+      #       RunOrder: 1
+      #       OutputArtifacts:
+      #         - Name: BuildOutput 
+      - Name: Deploy_stage
+        Actions: 
+           - Name: Deploy
+             InputArtifacts: 
+               - Name: AppArtifact
+             ActionTypeId: 
+               Category: Deploy 
+               Owner: AWS 
+               Version: 1
+               Provider: CloudFormation
+             Configuration: 
+               ActionMode: 'CREATE_UPDATE'
+               Capabilities: 'CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND'
+               RoleArn: arn:aws:iam::107406514706:role/cftcloudformation
+               StackName: codebuildcft
+               TemplatePath: 'AppArtifact::ec2cft.yml'
+             RunOrder: 1
+            #  OutputArtifacts: []
+      - Name: deletion_stage
+        Actions: 
+           - Name: Deletion
+             InputArtifacts: 
+               - Name: AppArtifact
+             ActionTypeId: 
+               Category: Deploy 
+               Owner: AWS 
+               Version: 1
+               Provider: CloudFormation
+             Configuration: 
+               ActionMode: 'DELETE_ONLY'
+               Capabilities: 'CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND'
+               RoleArn: arn:aws:iam::107406514706:role/cftcloudformation
+               StackName: codebuildcft
+               TemplatePath: 'AppArtifact::ec2cft.yml'
+             RunOrder: 1
+             OutputArtifacts: []

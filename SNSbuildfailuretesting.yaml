@@ -1,0 +1,261 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: creating EC2 Instance 
+
+Resources:
+ codePipeline: 
+  Type: AWS::CodePipeline::Pipeline 
+  Properties: 
+    Name : codepipelinecft
+    RoleArn: arn:aws:iam::107406514706:role/service-role/AWSCodePipelineServiceRole-us-east-1-cftcodepipelinetest
+    # Triggers: 
+    #   - ProviderType: CodeStarSourceConnection
+    # ExecutionMode: PARALLEL 
+    # PipelineType: V2
+    ArtifactStore:
+        Type: S3
+        Location: cf-templates-z4l0q3hmcyj4-us-east-1
+    Stages: 
+      - Name: Source
+        Actions:
+          - Name: Sources3
+            ActionTypeId:
+             Category: Source
+             Owner: AWS
+             Version: "1"
+             Provider: S3
+            Configuration:
+             S3Bucket: cf-templates-z4l0q3hmcyj4-us-east-1
+             S3ObjectKey: internal.zip
+            OutputArtifacts:
+                - Name: internal
+            RunOrder: 1
+
+          # - Name: Versioned
+          #   ActionTypeId:
+          #    Category: Source
+          #    Owner: AWS
+          #    Version: "1"
+          #    Provider: S3
+          #   Configuration:
+          #    S3Bucket: codebuildpipelinecftbucket023
+          #    S3ObjectKey: ec2cft.yml.zip
+          #    PollForSourceChanges: false
+          #   OutputArtifacts:
+          #    - Name: version
+          #   RunOrder: 2
+
+      # - Name: Build
+      #   Actions: 
+      #     - Name: codebuild 
+      #       InputArtifacts: 
+      #         - Name: AppArtifact 
+      #       ActionTypeId: 
+      #         Category: Build 
+      #         Owner: AWS 
+      #         Version: 1 
+      #         Provider: CodeBuild
+      #       Configuration: 
+      #         ProjectName: !Ref Codebuild
+      #       RunOrder: 1
+      #       OutputArtifacts:
+      #         - Name: BuildOutput 
+            
+      - Name: Deploy_stage
+        Actions:
+          - Name: Create-Changeset
+            ActionTypeId:
+             Category: Deploy
+             Owner: AWS
+             Provider: CloudFormation
+             Version: "1"
+            Configuration:
+             ActionMode: CHANGE_SET_REPLACE
+             StackName: codebuildcft
+             TemplatePath: 'internal::Transform_function.yml'
+             ChangeSetName: EC2creation
+             RoleArn: arn:aws:iam::107406514706:role/cftcloudformation
+            RunOrder: 1
+            InputArtifacts: 
+              - Name: internal
+          - Name: Review-Changeset
+            ActionTypeId:
+             Category: Approval
+             Owner: AWS
+             Provider: Manual
+             Version: "1"
+            RunOrder: 2 
+          - Name: ExecuteChangeset
+            ActionTypeId:
+             Category: Deploy
+             Owner: AWS
+             Version: "1"
+             Provider: CloudFormation
+            Configuration:
+             ActionMode: CHANGE_SET_EXECUTE
+             ChangeSetName: EC2creation
+             StackName: codebuildcft 
+             RoleArn: arn:aws:iam::107406514706:role/cftcloudformation 
+            RunOrder: 3
+          - Name: stack_deletion_stage_approval
+            ActionTypeId:
+             Category: Approval
+             Owner: AWS
+             Provider: Manual
+             Version: "1"
+            RunOrder: 4 
+      - Name: deletion_stage
+        Actions: 
+           - Name: Deletion
+             InputArtifacts: 
+               - Name: internal
+             ActionTypeId: 
+               Category: Deploy 
+               Owner: AWS 
+               Version: 1
+               Provider: CloudFormation
+             Configuration: 
+               ActionMode: 'DELETE_ONLY'
+               Capabilities: 'CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND'
+               RoleArn: arn:aws:iam::107406514706:role/cftcloudformation
+               StackName: codebuildcft
+               TemplatePath: 'internal::Transform_function.yml'
+             RunOrder: 1
+             OutputArtifacts: []
+ Codebuild:
+  Type: AWS::CodeBuild::Project
+  Properties:
+    Name: Codebuildcft
+    Description: Creating ec2 instance using code build
+    #create an IAM role for code build service with full access
+    ServiceRole: arn:aws:iam::107406514706:role/service-role/cftcodebuild-test-service-role
+    SourceVersion: "main"
+    # Tags: 
+    #    - Key: name
+    #      Value: "{{resolve:ssm:test}}"
+    LogsConfig:
+      CloudWatchLogs:
+        Status: ENABLED
+    Artifacts:
+      Type: no_artifacts
+    Environment:
+      Type: LINUX_CONTAINER
+      ComputeType: BUILD_GENERAL1_SMALL
+      Image: aws/codebuild/java:openjdk-8
+      EnvironmentVariables:      
+         - Name: BRANCH_NAME
+           Value: main
+    Source:
+      Auth:
+       Type: OAUTH
+      Location: https://github.com/gamidirakesh/AWS-CFT.git
+      BuildSpec: buildspec.yaml
+      Type: GITHUB
+    TimeoutInMinutes: 30
+ SNScft:
+  Type: AWS::SNS::Topic
+  Properties:
+    DisplayName: Creating test topic
+    Tags: 
+     - Key: name
+       Value: SNS
+    Subscription:
+        - Endpoint: gamidirakhi@gmail.com
+          Protocol: email
+    TopicName: SNScfttest
+ PipelineTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Id: CloudWatchEvent
+        Version: 2012-10-17
+        Statement:
+          - Sid: Allows CloudWatch Events to interact with SNS topic
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: "sns:Publish"
+            Resource: !Ref SNScft
+      Topics:
+        - !Ref SNScft
+ BuildProjectFailureEvent:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: !Sub Event to monitor ${Codebuild} failure events
+      EventPattern:
+        source:
+          - aws.codebuild
+        detail-type:
+          - CodeBuild Build State Change
+        detail:
+          build-status:
+            - FAILED
+            - SUCCEEDED
+          project-name:
+            - !Ref Codebuild
+      Name: !Join ["-", [!Sub "${AWS::StackName}", "monitor-build-failures"]]
+      State: ENABLED
+      Targets:
+        - Id: !Join ["-", [!Sub "${AWS::StackName}", "failure-event"]]
+          Arn: !Ref SNScft
+          InputTransformer:
+            InputPathsMap:
+              project-name: $.detail.project-name
+              build-id: $.detail.build-id
+              build-status: $.detail.build-status
+              time: $.time
+              account: $.account
+            InputTemplate: |
+              "The Pull Request Validation job <project-name> has failed to execute properly.  Interactions with the associated pipeline will be affected. Please look into why this job failed by analyzing the logs."
+
+              "Account: <account>." 
+              "Time: <time> UTC." 
+              "Build Id: <build-id>." 
+              "CodeBuild Project Name: <project-name>." 
+              "Build Status: <build-status>."
+ PipelineFailureEvent:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Pipeline failure event
+      Name: !Join ["-", [!Sub "${AWS::StackName}", "pipeline-failures"]]
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          # - CodePipeline stage Execution State Change
+          - CodePipeline Action Execution State Change
+        detail:
+          state:
+            - FAILED
+            - SUCCEEDED
+          pipeline:
+            - !Ref codePipeline
+          action:
+            - Sources3
+            - Review-Changeset
+            # - !If [DevEnvironment, Dev-Deploy, !Ref "AWS::NoValue"]
+            # - deletion_stage
+            # - Promote-Artifact
+            # - !If [ProdEnvironment, Prod-Deploy, !Ref "AWS::NoValue"]
+            # - !If [ProdEnvironment, Promote-Stage-Artifact, !Ref "AWS::NoValue"]
+
+      State: ENABLED
+      Targets:
+        - Id: !Join ["-", [!Sub "${AWS::StackName}", "failure-event"]]
+          Arn: !Ref SNScft
+          InputTransformer:
+            InputPathsMap:
+              pipeline: $.detail.pipeline
+              execution-id: $.detail.execution-id
+              action: $.detail.action
+              state: $.detail.state
+              time: $.time
+              account: $.account
+            InputTemplate: |
+              "The Pipeline <pipeline> has failed to execute properly."
+
+              "Account: <account>." 
+              "Time: <time> UTC." 
+              "Pipeline Name: <pipeline>."
+              "Pipeline Execution Id: <execution-id>." 
+              "Pipeline Action: <action>." 
+              "State: <state>."
