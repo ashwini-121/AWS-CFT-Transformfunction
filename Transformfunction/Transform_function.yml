@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: creating EC2 Instance 
+
+Resources:
+ EC2Creation:
+   Type: AWS::EC2::Instance
+   Properties:
+
+     'Fn::Transform':
+        Name: 'AWS::Include'
+        Parameters:
+           Location: 's3://cf-templates-z4l0q3hmcyj4-us-east-1/ec2creation.json'
+ 'Fn::Transform':
+        Name: 'AWS::Include'
+        Parameters:
+           Location: 's3://cf-templates-z4l0q3hmcyj4-us-east-1/ec2cft_json.json'
+
+
+
+  
+         
