@@ -1,0 +1,6 @@
+sudo -i
+yum update -y
+yum install -y httpd
+echo "Healthy" > /var/www/html/index.html
+systemctl start httd
+systemctl enable httpd

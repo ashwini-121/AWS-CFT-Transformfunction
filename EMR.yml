@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  # CustomAmiId:
+  #   Type: String
+  #   Default: ami-04a0ae173da5807d3
+  #   AllowedValues:
+  #     - ami-0889a44b331db0194
+  #     - ami-06e46074ae430fba6
+  #     - ami-04a0ae173da5807d3
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: m1.medium
+    AllowedValues:
+      - t1.micro
+      - t2.nano
+      - m1.medium
+  ReleaseLabel:
+    Type: String
+    Default: emr-6.6.0
+  SubnetId:
+    Type: String
+    Default: subnet-01e9f8544556bbc6c
+  TerminationProtected:
+    Type: String
+    Default: 'false'
+Resources:
+  emrcluster:
+    Type: AWS::EMR::Cluster
+    Properties:
+      # CustomAmiId: !Ref CustomAmiId
+      Applications:
+       - Name: Spark
+       - Name: Zeppelin
+      Instances:
+        MasterInstanceGroup:
+          InstanceCount: 1
+          InstanceType: !Ref InstanceType
+          Market: ON_DEMAND
+          Name: Master
+        CoreInstanceGroup:
+          InstanceCount: 1
+          InstanceType: !Ref InstanceType
+          Market: ON_DEMAND
+          Name: Core
+        # TaskInstanceGroups:
+        #   - InstanceCount: 1
+        #     InstanceType: !Ref InstanceType
+        #     Market: ON_DEMAND
+        #     Name: Task
+        TerminationProtected: !Ref TerminationProtected
+        Ec2SubnetId: !Ref SubnetId
+        EmrManagedMasterSecurityGroup: sg-08571d0e599d28fb6
+        EmrManagedSlaveSecurityGroup: sg-08571d0e599d28fb6
+        Ec2KeyName: test
+      Name: EMR CFT
+      BootstrapActions:
+        - Name: bootstrapfile.txt
+          ScriptBootstrapAction:
+            Args: []
+            Path: "s3://cf-templates-z4l0q3hmcyj4-us-east-1"
+      LogUri: "s3://cf-templates-z4l0q3hmcyj4-us-east-1"
+      ManagedScalingPolicy:
+         ComputeLimits:
+            MaximumCapacityUnits: 5
+            MaximumCoreCapacityUnits: 1
+            MaximumOnDemandCapacityUnits: 5
+            MinimumCapacityUnits: 1
+            UnitType: Instances
+      JobFlowRole: !Ref emrEc2InstanceProfile
+      EbsRootVolumeSize: '10'
+      ServiceRole: !Ref emrRole
+      ReleaseLabel: !Ref ReleaseLabel
+      # ServiceRole: elasticmapreduce.amazonaws.com
+      # JobFlowRole: ec2.amazonaws.com
+      VisibleToAllUsers: true
+      Tags:
+        - Key: Name
+          Value: test
+  emrRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2008-10-17
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service:
+               - elasticmapreduce.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonElasticMapReduceRole'
+  emrEc2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2008-10-17
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service:
+               - ec2.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonElasticMapReduceforEC2Role'
+  emrEc2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref emrEc2Role

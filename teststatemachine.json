@@ -1,0 +1,80 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "Lambda Invoke",
+  "States": {
+    "Lambda Invoke": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "arn:aws:lambda:us-east-1:107406514706:function:test:$LATEST"
+      },
+      "Next": "Choice"
+    },
+    "Choice": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$",
+          "StringEquals": "Resultpath",
+          "Next": "CreateCluster"
+        }
+      ],
+      "Default": "Workflow"
+    },
+    "CreateCluster": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::elasticmapreduce:createCluster",
+      "Parameters": {
+        "Name": "Transient",
+        "ServiceRole": "EMRserivcerole",
+        "JobFlowRole": "AmazonEMR-InstanceProfile-20230828T132849",
+        "ReleaseLabel": "emr-6.6.0",
+        "AutoTerminationPolicy": {
+          "IdleTimeout": 60
+        },
+        "Applications": [
+          {
+            "Name": "Spark"
+          }
+        ],
+        "VisibleToAllUsers": true,
+        "Instances": {
+          "KeepJobFlowAliveWhenNoSteps": true,
+          "InstanceFleets": [
+            {
+              "InstanceFleetType": "MASTER",
+              "Name": "Master",
+              "TargetOnDemandCapacity": 1,
+              "InstanceTypeConfigs": [
+                {
+                  "InstanceType": "m1.medium"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "Next": "Workflow",
+      "ResultSelector": {
+        "ClusterId.$": "$.ClusterId"
+      }
+    },
+    "Workflow": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::elasticmapreduce:addStep",
+      "Parameters": {
+        "ClusterId.$": "$.ClusterId",
+        "Step": {
+          "Name": "MyStepName",
+          "ActionOnFailure": "CONTINUE",
+          "HadoopJarStep": {
+            "Jar": "MyJarFile.jar"
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

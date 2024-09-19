@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  EnvironmentName:
+    Description: Environment Name
+    Type: String
+    AllowedValues: [development, production]
+    ConstraintDescription: must be development or production
+
+
+Mappings:
+  AWSRegionArch2AMI:
+    us-east-1:
+      HVM64: ami-0715c1897453cabd1
+    us-east-2:
+      HVM64: ami-01107263728f3bef4
+
+  EnvironmentToInstanceType:
+    development:
+      instanceType: t2.micro
+    production:
+      instanceType: t2.small
+
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !FindInMap [EnvironmentToInstanceType, !Ref 'EnvironmentName', instanceType]
+
+      ImageId: !FindInMap [AWSRegionArch2AMI, !Ref 'AWS::Region',HVM64]

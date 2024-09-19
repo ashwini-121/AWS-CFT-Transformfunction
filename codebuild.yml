@@ -1,0 +1,68 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating EC2 Instance with security group by enabling port 80 and 22(SSH) and S3 Bucket
+
+Resources:
+#  ArtifactBucket:
+#    Type: AWS::S3::Bucket
+#    Properties:
+#     BucketName: !Join ["-", [!Sub "codebuildpipeline", "cftbucket"] ]
+#     VersioningConfiguration:
+#      Status: Enabled
+ Codebuild:
+  Type: AWS::CodeBuild::Project
+  Properties:
+    Name: cftcodebuild
+    Description: Creating ec2 instance using code build
+    #create an IAM role for code build service with full access
+    ServiceRole: arn:aws:iam::107406514706:role/service-role/cftcodebuild-test-service-role
+    SourceVersion: "main"
+    # Tags: 
+    #    - Key: name
+    #      Value: "{{resolve:ssm:test}}"
+    LogsConfig:
+      CloudWatchLogs:
+        Status: ENABLED
+    Artifacts:
+      Type: no_artifacts
+    Environment:
+      Type: LINUX_CONTAINER
+      ComputeType: BUILD_GENERAL1_SMALL
+      Image: aws/codebuild/java:openjdk-8
+      EnvironmentVariables:      
+         - Name: BRANCH_NAME
+           Value: main
+    Source:
+      Auth:
+       Type: OAUTH
+      Location: https://github.com/gamidirakesh/AWS-CFT.git
+      BuildSpec: buildspec.yaml
+      Type: GITHUB
+    TimeoutInMinutes: 30
+    # VpcConfig:
+    #   SecurityGroupIds: 
+    #    - sg-05f5edce3f357f202
+    #   Subnets: 
+    #    - subnet-0c3e0fd92fa47bd30
+    #   VpcId: "vpc-04b240756e515b6cc"
+    # Tags:
+    #   - Key: Key1
+    #     Value: Value1
+ EventBridgeRule:
+   Type: AWS::Events::Rule
+   Properties:
+     Name: Test 
+     Description: "emr-state-change-EventRule"
+     EventPattern: 
+      source: 
+         - 'aws.emr'
+      detail-type: 
+          - 'EMR Cluster State Change'
+      detail: 
+         state:
+           - 'STARTING'
+     State: "ENABLED"
+     Targets: 
+       - Arn: !GetAtt Codebuild.Arn
+         Id: "Codebuild"
+         RoleArn: arn:aws:iam::107406514706:role/service-role/cftcodebuild-test-service-role

@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t1.micro
+      - t2.nano
+      - t2.micro
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    Default: test
+  ImageId:
+    Type: String
+    Default: ami-06e46074ae430fba6
+    AllowedValues:
+      - ami-0889a44b331db0194
+      - ami-06e46074ae430fba6
+
+Resources:
+  myLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties: 
+      LaunchTemplateName: myLaunchTemplate1
+      LaunchTemplateData:
+        ImageId: !Ref ImageId
+        InstanceType: !Ref InstanceType
+        KeyName: !Ref KeyName
+        UserData:
+         Fn::Base64:
+           !Sub |
+             #!/bin/bash -xe
+              sudo -i
+              yum update -y
+              yum install -y httpd
+              echo "UnHealthy" > /var/www/html/index.html
+              systemctl start httpd
+              systemctl enable httpd
+  myASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: autoscalingcft
+      AvailabilityZones: 
+        - us-east-1a
+        - us-east-1b  
+      LaunchTemplate:
+        LaunchTemplateId: !Ref myLaunchTemplate
+        Version: !GetAtt myLaunchTemplate.LatestVersionNumber
+      MaxSize: '2'
+      MinSize: '1'
+      DesiredCapacity: '1'
+  ServiceScalingPolicyCPU:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: cpu scaling
+      PolicyType: TargetTrackingScaling
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 10.0
+     
+

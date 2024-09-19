@@ -1,0 +1,10 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: creating EC2 Instance 
+
+Resources:
+
+  'Fn::Transform':
+      Name: 'AWS::Include'
+      Parameters:
+        Location: 's3://codebuildpipelinecftbucket/ec2cft_json.json'
+         

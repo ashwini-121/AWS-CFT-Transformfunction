@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t1.micro
+      - t2.nano
+      - t2.micro
+  ImageId:
+    Type: String
+    Default: ami-0e731c8a588258d0d
+    AllowedValues:
+      - ami-0889a44b331db0194
+      - ami-0e731c8a588258d0d
+Resources:
+  myLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: myLaunchTemplate1 
+      LaunchTemplateData:
+        ImageId: !Ref ImageId  
+        InstanceType: !Ref InstanceType
+        SecurityGroupIds:
+          - sg-05a716a1c6c111f36
+        UserData:
+         Fn::Base64:
+           !Sub |
+             #!/bin/bash 
+              sudo -i
+              yum update -y
+              yum install -y httpd
+              echo "UnHealthy" > /var/www/html/index.html
+              systemctl start httpd
+              systemctl enable httpd
+  myASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: autoscalingcft
+      AvailabilityZones: 
+        - us-east-1a
+        - us-east-1b  
+      LaunchTemplate:
+        LaunchTemplateId: !Ref myLaunchTemplate
+        Version: !GetAtt myLaunchTemplate.LatestVersionNumber
+      Tags:
+       - Key: Name
+         PropagateAtLaunch: true
+         Value: EC2 ASG
+      MaxSize: '3'
+      MinSize: '1'
+      DesiredCapacity: '1'
+  
+  PredictiveScalingPolicy:
+    Type: 'AWS::AutoScaling::ScalingPolicy'
+    Properties:
+      AutoScalingGroupName: !Ref myASG
+      PolicyType: PredictiveScaling
+      PredictiveScalingConfiguration:
+        MetricSpecifications:
+          - TargetValue: '20'
+            PredefinedMetricPairSpecification:
+              PredefinedMetricType: ASGCPUUtilization
+        Mode: ForecastAndScale
+        SchedulingBufferTime: 30
+  
+  CPUPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: !Ref myASG
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: 20
+      

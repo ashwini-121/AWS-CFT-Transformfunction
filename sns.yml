@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: creating EC2 Instance 
+
+Resources:
+ SNScft:
+  Type: AWS::SNS::Topic
+  Properties:
+    DisplayName: Creating test topic
+    Tags: 
+     - Key: name
+       Value: SNS
+    Subscription:
+        - Endpoint: gamidirakhi@gmail.com
+          Protocol: email
+    TopicName: SNScfttest
+ PipelineTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Id: CloudWatchEvent
+        Version: 2012-10-17
+        Statement:
+          - Sid: Allows CloudWatch Events to interact with SNS topic
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: "sns:Publish"
+            Resource: !Ref SNScft
+      Topics:
+        - !Ref SNScft
+  
+

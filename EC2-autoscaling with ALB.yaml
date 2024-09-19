@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t1.micro
+      - t2.nano
+      - t2.micro
+  ImageId:
+    Type: String
+    Default: ami-0e731c8a588258d0d
+    AllowedValues:
+      - ami-0889a44b331db0194
+      - ami-0e731c8a588258d0d
+
+Resources:
+#Create an Application Load Balancer
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: MyApplicationLoadBalancer
+      SecurityGroups:
+        - sg-05a716a1c6c111f36
+      Subnets: 
+        - subnet-01e9f8544556bbc6c
+        - subnet-0c3f6946acfc9c0b8
+
+#Create a Listener on Port 80
+  Listener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+      - Type: forward
+        ForwardConfig:
+          TargetGroups:
+            - TargetGroupArn: !Ref ALBTargetGroup
+              Weight: 1
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+# Create a Target Group
+  ALBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      Name: MyWebServers
+      Port: 80
+      Protocol: HTTP
+      TargetType: instance
+      UnhealthyThresholdCount: 5
+      VpcId: vpc-068c55fac37bc9bda
+
+  myLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: myLaunchTemplate1 
+      LaunchTemplateData:
+        ImageId: !Ref ImageId  
+        InstanceType: !Ref InstanceType
+        SecurityGroupIds:
+          - sg-05a716a1c6c111f36
+        UserData:
+         Fn::Base64:
+           !Sub |
+             #!/bin/bash 
+              sudo -i
+              yum update -y
+              yum install -y httpd
+              echo "My httpd server" > /var/www/html/index.html
+              systemctl start httpd
+              systemctl enable httpd
+  myASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: autoscalingcft
+      AvailabilityZones: 
+        - us-east-1a
+        - us-east-1b  
+      LaunchTemplate:
+        LaunchTemplateId: !Ref myLaunchTemplate
+        Version: !GetAtt myLaunchTemplate.LatestVersionNumber
+      TargetGroupARNs: 
+        - !Ref ALBTargetGroup
+      Tags:
+       - Key: Name
+         PropagateAtLaunch: true
+         Value: EC2 ASG
+      MaxSize: '3'
+      MinSize: '1'
+      DesiredCapacity: '1'
+  
+  CPUdynamictragettrackingPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: !Ref myASG
+      PolicyType: TargetTrackingScaling
+      EstimatedInstanceWarmup: 10
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: 10
+
+
+
+
+
+
+
+
+
+
+  # PredictiveScalingPolicy:
+  #   Type: 'AWS::AutoScaling::ScalingPolicy'
+  #   Properties:
+  #     AutoScalingGroupName: !Ref myASG
+  #     PolicyType: PredictiveScaling
+  #     PredictiveScalingConfiguration:
+  #       MetricSpecifications:
+  #         - TargetValue: '10'
+  #           PredefinedMetricPairSpecification:
+  #             PredefinedMetricType: ASGCPUUtilization
+  #       Mode: ForecastAndScale
+  #       SchedulingBufferTime: 30
+      

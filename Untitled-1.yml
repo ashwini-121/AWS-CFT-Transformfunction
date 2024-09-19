@@ -1,0 +1,104 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: creating codebuild and code pipeline service
+
+Resources:
+#  ArtifactBucket:
+#   # Type: AWS::S3::Bucket
+#   # Properties:
+#   #  ame: codebuild
+ ArtifactBucket:
+   Type: 'AWS::S3::Bucket'
+   DeletionPolicy: Retain
+   Properties:
+     BucketName: codebuildpipelinecftbucket023
+
+
+ Codebuild:
+  Type: AWS::CodeBuild::Project
+  Properties:
+    Name: codebuildcft
+    Description: Creating ec2 instance using code build
+    ServiceRole: arn:aws:iam::442149536863:role/service-role/codebuild-test2-service-role
+    LogsConfig:
+      CloudWatchLogs:
+        Status: ENABLED
+    Artifacts:
+      Type: no_artifacts
+    Environment:
+      Type: LINUX_CONTAINER
+      ComputeType: BUILD_GENERAL1_SMALL
+      Image: aws/codebuild/java:openjdk-8
+    Source:
+      Auth:
+       Type: OAUTH
+      Location: https://github.com/gamidirakesh/AWS-CFT.git
+      Type: GITHUB
+    TimeoutInMinutes: 10
+    Tags:
+      - Key: Key1
+        Value: Value1
+
+
+ codePipeline: 
+  Type: AWS::CodePipeline::Pipeline 
+  Properties: 
+    RoleArn: arn:aws:iam::442149536863:role/service-role/AWSCodePipelineServiceRole-us-east-1-test
+    Name: codepipelinedemo 
+    Stages: 
+      - Name: source stage
+        Actions: 
+          - Name: SourceAction
+            ActionTypeId: 
+              Category: Source 
+              Owner: AWS 
+              Version: 2 
+              Provider: GitHub
+            OutputArtifacts: 
+              - Name: SourceOutput 
+            Configuration: 
+                RepositoryName: gamidirakesh/AWS-CFT
+                BranchName: main
+            RunOrder: 1
+
+         
+      - Name: Build stage
+        Actions: 
+          - Name: codebuild 
+            InputArtifacts: 
+              - Name: SourceOutput 
+            ActionTypeId: 
+              Category: Build 
+              Owner: AWS 
+              Version: 1 
+              Provider: CodeBuild
+            Configuration: 
+              ProjectName: !Ref Codebuild
+              RoleArn: arn:aws:iam::442149536863:role/service-role/codebuild-test2-service-role
+            RunOrder: 1
+            OutputArtifacts:
+              - Name: BuildOutput 
+            
+      - Name: Deploy stage
+        Actions: 
+          - Name: Deploy
+            InputArtifacts: 
+              - Name: BuildOutput
+            ActionTypeId: 
+              Category: Deploy 
+              Owner: AWS 
+              Version: 1
+              Provider: CloudFormation 
+            Configuration: 
+              ActionMode: 'CREATE_UPDATE'
+              Capabilities: 'CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND'
+              RoleArn: arn:aws:iam::442149536863:role/service-role/AWSCodePipelineServiceRole-us-east-1-test
+              StackName: codebuildcft
+              TemplatePath: 'BuildOutput::ec2cft.yml'
+            RunOrder: 1
+            OutputArtifacts: []
+
+
+    ArtifactStores:
+     - ArtifactStore:
+         Type: S3
+         Location: !Ref ArtifactBucket

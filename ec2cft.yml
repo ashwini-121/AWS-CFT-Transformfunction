@@ -1,0 +1,91 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating EC2 Instance with security group by enabling port 80 and 22(SSH) and S3 Bucket
+Parameters:
+  AvailabilityZone:
+    Type: String
+    Default: us-east-1a
+    AllowedValues:
+      - us-west-1
+      - us-east-1a
+      - ap-southeast-1a
+    Description: Enter availabilityzone
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    # AllowedValues:
+    #   - a1.2xlarge   
+    #   - a1.metal  
+    #   - a1.medium 
+    #   - t2.micro 
+  ImageId:
+    Type: String
+    Default: ami-0277155c3f0ab2930
+    AllowedValues:
+      - ami-0277155c3f0ab2930
+      - ami-06e46074ae430fba6
+  
+Resources: 
+  WebServerSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: "Enable HTTP access via port 80 + SSH access"
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: 80
+        IpProtocol: tcp
+        ToPort: 80
+      - CidrIp: 0.0.0.0/0
+        FromPort: 22
+        IpProtocol: tcp
+        ToPort: 22
+      - CidrIp: 0.0.0.0/0
+        FromPort: 8080
+        IpProtocol: tcp
+        ToPort: 8080
+
+  EC2Instance: 
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref ImageId
+      KeyName: test
+      Tags:
+        - Key: Name
+          Value: EC2 cft Demo
+      UserData: 
+        Fn::Base64:
+          !Sub |
+             #!/bin/bash
+             sudo -i
+             yum update -y
+             yum install httpd -y
+             systemctl start httpd
+             systemctl enable httpd
+             cd /var/www/html
+             touch test.html
+            #  echo Httpd Demo server >> test.html
+            #  yum install java -y
+            #  yum install git maven -y
+            #  wget http://mirrors.jenkins.io/war-stable/latest/jenkins.war
+            #  java -jar jenkins.war
+            #  yum install git -y
+            #  git clone https://github.com/gamidirakesh/spring-petclinic-1.git /home/ec2-user/hari
+             
+      SecurityGroups:
+        - !Ref WebServerSecurityGroup
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: testec2s3123
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+  
+  
+    
+       
+

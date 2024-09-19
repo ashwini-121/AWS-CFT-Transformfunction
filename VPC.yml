@@ -1,0 +1,187 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t1.micro
+      - t2.nano
+      - t2.micro
+  ImageId:
+    Type: String
+    Default: ami-06e46074ae430fba6
+    AllowedValues:
+      - ami-0889a44b331db0194
+      - ami-06e46074ae430fba6
+
+Resources:
+  stackvpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+        - Key: Name
+          Value: stack vpc
+
+  publicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref stackvpc
+      CidrBlock: 10.0.0.0/24
+      AvailabilityZone: "us-east-1a"
+      Tags:
+        - Key: Name
+          Value: Public subnet
+      MapPublicIpOnLaunch: true 
+
+  privateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref stackvpc
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: "us-east-1b"
+      Tags:
+        - Key: Name
+          Value: Private subnet
+      MapPublicIpOnLaunch: false
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref stackvpc
+      Tags:
+        - Key: Name
+          Value: Public Route table
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties: 
+      Tags: 
+        - Key: Name
+          Value: Private Route Table
+      VpcId: !Ref stackvpc
+    
+  PrivateSubnetRouteTableAssociate:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref privateSubnet
+
+  PublicSubnetRouteTableAssociate:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref publicSubnet 
+
+  myRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref myInternetGateway
+
+  securityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to client host
+      VpcId: !Ref stackvpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  myInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: stack
+          Value: production
+  
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties: 
+      InternetGatewayId: !Ref myInternetGateway
+      VpcId: !Ref stackvpc
+
+  NATGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NATGatewayEIP.AllocationId
+      SubnetId: !Ref publicSubnet
+      Tags:
+        - Key: stack
+          Value: production
+
+  NATGatewayEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: standard
+
+  routeNATGateway:
+    DependsOn: NATGateway
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      NatGatewayId: !Ref NATGateway
+
+  EC2Instance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref publicSubnet
+      SecurityGroupIds:
+        - !Ref securityGroup
+      KeyName: test
+      ImageId: !Ref ImageId
+      Tags:
+        - Key: Name
+          Value: EC2-1
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash -xe
+          sudo -i
+          yum update -y
+          yum install -y httpd
+          echo "Healthy" > /var/www/html/index.html
+          systemctl start httpd
+          systemctl enable httpd
+
+  EC2Instance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref privateSubnet
+      SecurityGroupIds:
+        - !Ref securityGroup
+      KeyName: test
+      ImageId: !Ref ImageId
+      Tags:
+        - Key: Name
+          Value: EC2-2
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash -xe
+          sudo -i
+          yum update -y
+          yum install -y httpd
+          echo "UnHealthy" > /var/www/html/index.html
+          systemctl start httpd
+          systemctl enable httpd

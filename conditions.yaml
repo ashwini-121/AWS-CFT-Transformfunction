@@ -1,0 +1,50 @@
+Parameters:
+  ImageId:
+    Type: String
+    Default: ami-06e46074ae430fba6
+
+  EnvType:
+    Description: Environment Type
+    Default: dev
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+    ConstraintDescription: must specify prod or test
+
+Conditions:
+  CreateProdResources: !Equals [!Ref EnvType, prod]
+
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: t2.micro
+
+  MountPoint:
+    Type: AWS::EC2::VolumeAttachment
+    Condition: CreateProdResources
+    Properties:
+         VolumeId:
+            !Ref NewVolume
+         InstanceId:
+            !Ref EC2Instance 
+         Device: /dev/sdh
+
+
+  NewVolume:
+    Type: AWS::EC2::Volume
+    Condition: CreateProdResources
+    Properties:
+      Size: 1
+      AvailabilityZone:
+        !GetAtt EC2Instance.AvailabilityZone
+
+Outputs:
+     VolumeId:
+        Condition: CreateProdResources
+        Value:
+          !Ref NewVolume    
+
+      

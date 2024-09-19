@@ -1,0 +1,13 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: An example template for a Step Functions state machine.
+Resources:
+  MyStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: Test-StateMachine
+      DefinitionS3Location:
+        Bucket: cf-templates-z4l0q3hmcyj4-us-east-1
+        Key: teststatemachine.json
+      RoleArn: arn:aws:iam::107406514706:role/service-role/StepFunctions-MyStateMachine-r59wnjd9x-role-faw2fu1ks
+      StateMachineType: STANDARD
+         
