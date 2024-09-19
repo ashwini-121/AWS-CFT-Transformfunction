@@ -1,0 +1,62 @@
+{
+  "Applications": [
+    {
+      "Name": "Spark"
+    },
+    {
+      "Name": "Zeppelin"
+    }
+  ],
+  "Instances": {
+    "MasterInstanceGroup": {
+      "InstanceCount": 1,
+      "InstanceType": "m1.medium",
+      "Market": "ON_DEMAND",
+      "Name": "Master"
+    },
+    "CoreInstanceGroup": {
+      "InstanceCount": 1,
+      "InstanceType": "m1.medium",
+      "Market": "ON_DEMAND",
+      "Name": "Core"
+    },
+    "TerminationProtected": false,
+    "Ec2SubnetId": "subnet-0c3f6946acfc9c0b8",
+    "EmrManagedMasterSecurityGroup": "sg-0d306c5841357c5c0",
+    "EmrManagedSlaveSecurityGroup": "sg-0d306c5841357c5c0",
+    "Ec2KeyName": "test"
+  },
+  "Name": "EMR_CFT",
+  "BootstrapActions": [
+    {
+      "Name": "bootstrapfile1.sh",
+      "ScriptBootstrapAction": {
+        "Args": [
+
+        ],
+        "Path": "s3://cf-templates-z4l0q3hmcyj4-us-east-1"
+      }
+    }
+  ],
+  "LogUri": "s3://cf-templates-z4l0q3hmcyj4-us-east-1",
+  "ManagedScalingPolicy": {
+    "ComputeLimits": {
+      "MaximumCapacityUnits": 5,
+      "MaximumCoreCapacityUnits": 1,
+      "MaximumOnDemandCapacityUnits": 5,
+      "MinimumCapacityUnits": 1,
+      "UnitType": "Instances"
+    }
+  },
+  "JobFlowRole": "AmazonEMR-InstanceProfile-20230828T132849",
+  "EbsRootVolumeSize": "10",
+  "ServiceRole": "EMRserivcerole",
+  "ReleaseLabel": "emr-6.6.0",
+  "VisibleToAllUsers": true,
+  "Tags": [
+    {
+      "Key": "Name",
+      "Value": "test"
+    }
+  ]
+}
